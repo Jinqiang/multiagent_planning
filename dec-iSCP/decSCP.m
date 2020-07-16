@@ -1,39 +1,33 @@
 clc
 clear all
 close all
+addpath(genpath('./../extras'));
+addpath(genpath('./../dmpc'));
+addpath(genpath('./../utils'));
+
+name_file_results='result_deciSCP.txt';
 
 % Time settings and variables
-T = 7; % Trajectory final time
-h = 0.2; % time step duration
+T = 15; % Trajectory final time
+h = 0.4; % time step duration. 
 tk = 0:h:T;
-K = T/h + 1; % number of time steps
-Ts = 0.01; % period for interpolation @ 100Hz
+K = floor(T/h) + 1; % number of time steps
+Ts = 0.01; % period for interpolation @ 100Hza
 t = 0:Ts:T; % interpolated time vector
 success = 1;
-N = 10; % number of vehicles
 
-% Variables for ellipsoid constraint
-order = 2; % choose between 2 or 4 for the order of the super ellipsoid
-rmin = 0.31; % X-Y protection radius for collisions
-c = 2.0; % make this one for spherical constraint
-E = diag([1,1,c]);
-E1 = E^(-1);
-E2 = E^(-order);
+use_iSCP=true; %if false, decSCP usually doesn't work
 
-% Workspace boundaries
-pmin = [-1.0,-1.0,0.2];
-pmax = [1.0,1.0,2.2];
+fileID = fopen(name_file_results,'a'); 
+fprintf(fileID,"++++++++++++++++++++++++++++++++++\n",h)
+fprintf(fileID,"h: %0.3f\n",h)
 
-rmin_init = 0.75;
-
+% rmin_init = 0.75;
 % Initial positions
-[po,pf] = randomTest(N,pmin,pmax,rmin_init,E1,order);
+% [po,pf] = randomTest(N,pmin,pmax,rmin_init,E1,order);
 
-% po1 = [-1.0, -1.0, 1.0];
-% po2 = [1.0, 1.0, 1.0];
-% 
-% po = cat(3,po1,po2);
-% pf = cat(3,po2,po1);
+[vmax, amax, po, pf,N,order,rmin,c,E,E1,E2,pmin,pmax] = getParameters();
+
 
 %% Some Precomputations
 l = [];
@@ -81,7 +75,11 @@ tic %measure the time it gets to solve the optimization problem
 for i = 1:N 
     poi = po(:,:,i);
     pfi = pf(:,:,i);
-    [pi, vi, ai,success] = singleiSCP(poi,pfi,h,K,pmin,pmax,rmin,alim,l,A_p,A_v,E1,E2,order);
+    if(use_iSCP==true)
+        [pi, vi, ai,success] = singleiSCP(poi,pfi,h,K,pmin,pmax,rmin,alim,l,A_p,A_v,E1,E2,order);
+    else
+        [pi, vi, ai,success] = singleSCP(poi,pfi,h,K,pmin,pmax,rmin,alim,l,A_p,A_v,E1,E2,order);
+    end
     if ~success
         fprintf('Failed solving for vehicle %i\n',i);
         break;
@@ -116,145 +114,16 @@ if success
 end
 
 pass = success && reached_goal && ~violation
-toc
+computation_time=toc;
+fprintf("Computation time is (seconds): %0.3f\n",computation_time)
+fprintf(fileID,"Computation time is (seconds): %0.3f\n",computation_time)
 
-%%
-L = length(t);
-colors = distinguishable_colors(N);
-figure(1)
-set(gcf,'currentchar',' ')
-while get(gcf,'currentchar')==' '
-    for k = 1:K
-        for i = 1:N
-            plot3(pk(1,k,i),pk(2,k,i),pk(3,k,i),'o', ...
-                  'LineWidth',2, 'Color',colors(i,:));
-            hold on;
-            grid on;
-            xlim([-4,4])
-            ylim([-4,4])
-            zlim([0,3.5])
-            plot3(po(1,1,i), po(1,2,i), po(1,3,i),'^',...
-                  'LineWidth',2,'Color',colors(i,:));
-            plot3(pf(1,1,i), pf(1,2,i), pf(1,3,i),'x',...
-                  'LineWidth',2,'Color',colors(i,:));    
-        end
-        drawnow
-    end
-    pause(1)
-    clf
-end
 
+[t,p,v,a]=scaleInterpolateCheckCollisionPrintTime(pk,vk,ak,k,N,vmax,amax,h,E1,order,rmin,pf,fileID);
+
+fclose(fileID);
 %% Plotting
-L = length(t);
-colors = distinguishable_colors(N);
-for i = 1:N
-    figure(1);
-    h_plot(i) = plot3(p(1,:,i), p(2,:,i), p(3,:,i), 'LineWidth',1.5,...
-                'Color',colors(i,:));
-    h_label{i} = ['Vehicle #' num2str(i)];
-    hold on;
-    grid on;
-    xlim([-4,4])
-    ylim([-4,4])
-    zlim([0,3.5])
-    xlabel('x[m]')
-    ylabel('y[m]');
-    zlabel('z[m]')
-    plot3(po(1,1,i), po(1,2,i), po(1,3,i),'x',...
-                  'LineWidth',3,'Color',colors(i,:));
-%     plot3(pf(1,1,i), pf(1,2,i), pf(1,3,i),'x',...
-%                   'LineWidth',5,'Color',colors(i,:)); 
-    
-    figure(2)
-    diff = p(:,:,i) - repmat(pf(:,:,i),length(t),1)';
-    dist = sqrt(sum(diff.^2,1));
-    plot(t, dist, 'LineWidth',1.5);
-    grid on;
-    hold on;
-    xlabel('t [s]')
-    ylabel('Distance to target [m]');
-    
-    
-    figure(3)
-    subplot(3,1,1)
-    plot(t,p(1,:,i),'LineWidth',1.5);
-    plot(t,pmin(1)*ones(length(t),1),'--r','LineWidth',1.5);
-    plot(t,pmax(1)*ones(length(t),1),'--r','LineWidth',1.5);
-    ylabel('x [m]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    subplot(3,1,2)
-    plot(t,p(2,:,i),'LineWidth',1.5);
-    plot(t,pmin(2)*ones(length(t),1),'--r','LineWidth',1.5);
-    plot(t,pmax(2)*ones(length(t),1),'--r','LineWidth',1.5);
-    ylabel('y [m]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    subplot(3,1,3)
-    plot(t,p(3,:,i),'LineWidth',1.5);
-    plot(t,pmin(3)*ones(length(t),1),'--r','LineWidth',1.5);
-    plot(t,pmax(3)*ones(length(t),1),'--r','LineWidth',1.5);
-    ylabel('z [m]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    figure(4)
-    subplot(3,1,1)
-    plot(t,v(1,:,i),'LineWidth',1.5);
-    ylabel('vx [m/s]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    subplot(3,1,2)
-    plot(t,v(2,:,i),'LineWidth',1.5);
-    ylabel('vy [m/s]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    subplot(3,1,3)
-    plot(t,v(3,:,i),'LineWidth',1.5);
-    ylabel('vz [m/s]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    figure(5)
-    subplot(3,1,1)
-    plot(t,a(1,:,i),'LineWidth',1.5);
-    plot(t,alim*ones(length(t),1),'--r','LineWidth',1.5);
-    plot(t,-alim*ones(length(t),1),'--r','LineWidth',1.5);
-    ylabel('ax [m/s]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    subplot(3,1,2)
-    plot(t,a(2,:,i),'LineWidth',1.5);
-    plot(t,alim*ones(length(t),1),'--r','LineWidth',1.5);
-    plot(t,-alim*ones(length(t),1),'--r','LineWidth',1.5);
-    ylabel('ay [m/s]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-
-    subplot(3,1,3)
-    plot(t,a(3,:,i),'LineWidth',1.5);
-    plot(t,alim*ones(length(t),1),'--r','LineWidth',1.5);
-    plot(t,-alim*ones(length(t),1),'--r','LineWidth',1.5);
-    ylabel('az [m/s]')
-    xlabel ('t [s]')
-    grid on;
-    hold on;
-   
-end
-%%
+doPlots(t,N,p,pmin,pmax,po,pf,v,vmax,a,amax)
 figure(6)
 for i = 1:N
     for j = 1:N
@@ -270,4 +139,3 @@ for i = 1:N
     end
 end
 plot(tk,rmin*ones(length(tk),1),'--r','LineWidth',1.5);
-legend(h_plot,h_label);

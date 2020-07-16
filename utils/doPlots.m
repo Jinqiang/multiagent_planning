@@ -1,80 +1,5 @@
-clc
-clear all
-close all
+function doPlots(t,N,p,pmin,pmax,po,pf,v,vmax,a,amax)
 
-% Time settings and variables
-T = 12; % Trajectory final time
-h = 0.3; % time step duration
-tk = 0:h:T;
-K = T/h + 1; % number of time steps
-Ts = 0.01; % period for interpolation @ 100Hz
-t = 0:Ts:T; % interpolated time vector
-success = 1;
-
-% Workspace boundaries
-pmin = [-7,-7,-7];
-pmax = [7,7,7];
-
-% Minimum distance between vehicles in m
-% rmin_init = 0.91;
-
-% Variables for ellipsoid constraint
-order = 2; % choose between 2 or 4 for the order of the super ellipsoid
-rmin = 0.35; % X-Y protection radius for collisions
-c = 1.0; % make this one for spherical constraint
-E = diag([1,1,c]);
-E1 = E^(-1);
-E2 = E^(-order);
-
-% Maximum acceleration in m/s^2
-alim = 1.0;
-
-% Initial positions
-% [po,pf] = randomTest(N,pmin,pmax,rmin_init);
-
-[vmax, amax, po, pf,N] = getParameters();
-
-
-%% Some Precomputations
-p = [];
-v = [];
-a = [];
-% Kinematic model A,b matrices
-A = [1 0 0 h 0 0;
-     0 1 0 0 h 0;
-     0 0 1 0 0 h;
-     0 0 0 1 0 0;
-     0 0 0 0 1 0;
-     0 0 0 0 0 1];
-
-b = [h^2/2*eye(3);
-     h*eye(3)];
- 
-prev_row = zeros(6,3*K); % For the first iteration of constructing matrix Ain
-A_p = zeros(3*(K-1),3*K);
-A_v = zeros(3*(K-1),3*K);
-idx=1;
-% Build matrix to convert acceleration to position
-for k = 1:(K-1)
-    add_b = [zeros(size(b,1),size(b,2)*(k-1)) b zeros(size(b,1),size(b,2)*(K-k))];
-    new_row = A*prev_row + add_b;   
-    A_p(idx:idx+2,:) = new_row(1:3,:);
-    A_v(idx:idx+2,:) = new_row(4:6,:);
-    prev_row = new_row;
-    idx = idx+3;
-end
-
-tic
-% Solve SCP
-[pk,vk,ak,success] = solveCupSCP(po,pf,h,K,N,pmin,pmax,rmin,alim,A_p,A_v,E1,E2,order);
-toc
-%%
-success
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[t,p,v,a]=scaleInterpolateCheckCollisionPrintTime(pk,vk,ak,k,N,vmax,amax,h,E1,order,rmin,pf);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%
 L = length(t);
 colors = distinguishable_colors(N);
 % figure(1)
@@ -86,9 +11,9 @@ colors = distinguishable_colors(N);
 %                   'LineWidth',2, 'Color',colors(i,:));
 %             hold on;
 %             grid on;
-%             xlim([pmin(1),pmax(1)])
-%             ylim([pmin(2),pmax(2)])
-%             zlim([0,pmax(3)])
+%             xlim([-4,4])
+%             ylim([-4,4])
+%             zlim([0,3.5])
 %             plot3(po(1,1,i), po(1,2,i), po(1,3,i),'^',...
 %                   'LineWidth',2,'Color',colors(i,:));
 %             plot3(pf(1,1,i), pf(1,2,i), pf(1,3,i),'x',...
@@ -100,9 +25,9 @@ colors = distinguishable_colors(N);
 %     clf
 % end
 
-%% Plotting
 L = length(t);
 colors = distinguishable_colors(N);
+       
 for i = 1:N
     figure(1);
     h_plot(i) = plot3(p(1,:,i), p(2,:,i), p(3,:,i), 'LineWidth',1.5,...
@@ -110,9 +35,9 @@ for i = 1:N
     h_label{i} = ['Vehicle #' num2str(i)];
     hold on;
     grid on;
-    xlim([-4,4])
-    ylim([-4,4])
-    zlim([0,3.5])
+    xlim([pmin(1),pmax(1)])
+    ylim([pmin(2),pmax(2)])
+    zlim([0,pmax(3)])
     xlabel('x[m]')
     ylabel('y[m]');
     zlabel('z[m]')
@@ -216,19 +141,8 @@ for i = 1:N
     hold on;
    
 end
-%%
-% figure(6)
-% for i = 1:N
-%     for j = 1:N
-%         if(i~=j)
-%             differ = E1*(pk(:,:,i) - pk(:,:,j));
-%             dist = (sum(differ.^order,1)).^(1/order);
-%             plot(tk, dist, 'LineWidth',1.5);
-%             grid on;
-%             hold on;
-%             xlabel('t [s]')
-%             ylabel('Inter-agent distance [m]');
-%         end
-%     end
-% end
-% plot(tk,rmin*ones(length(tk),1),'--r','LineWidth',1.5);
+
+
+legend(h_plot,h_label);
+
+end
