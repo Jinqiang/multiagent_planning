@@ -8,35 +8,15 @@ addpath(genpath('./../../utils'));
 name_file_results='result_dmpc.txt';
 % Time settings and variables
 max_T = 40; % Trajectory final time
-h = 0.15 % time step duration /// Crashes if h=0.1
-max_K = max_T/h + 1; % number of time steps
+h = 0.25 %0.25, 0.3, 0.36, 0.45   time step duration /// Crashes for some values of h
+max_K = floor(max_T/h) + 1; % number of time steps
 k_hor = 15; % horizon length
-
 
 fileID = fopen(name_file_results,'a'); 
 fprintf(fileID,"++++++++++++++++++++++++++++++++++\n",h)
 fprintf(fileID,"h: %0.3f\n",h)
 
-% Variables for ellipsoid constraint
-order = 2; % choose  between 2 or 4 for the order of the super ellipsoid
-rmin = 0.4; % X-Y protection radius for collisions
-c = 1.0; % make this 1 for spherical constraint
-E = diag([1,1,c]);
-E1 = E^(-1);
-E2 = E^(-order);
-
-% Workspace boundaries
-pmin = [-7.0,-7.0,-7.0];
-pmax = [7.0,7.0,7.0];
-
-% Minimum distance between vehicles in m
-% rmin_init = 0.3;
-
-% Initial positions
-% [po,pf] = randomTest(N,pmin,pmax,rmin_init,E1,order);
-
-[vmax, amax, po, pf,N] = getParameters();
-
+[vmax, amax, po, pf,N,order,rmin,c,E,E1,E2,pmin,pmax] = getParameters();
 
 %% Solving the problem
 l = [];
@@ -146,7 +126,7 @@ end
 passed = success && at_goal %DMPC was successful or not      
 computation_time=toc;
 fprintf("Computation time is (seconds): %0.3f\n",computation_time)
-fprintf(fileID,"Computation time is (seconds): %0.3f\n",computation_time)
+fprintf(fileID,"Computation time is (seconds): %0.3f\n",computation_time);
 
 if passed   
     [t,p,v,a]=scaleInterpolateCheckCollisionPrintTime(pk,vk,ak,k,N,vmax,amax,h,E1,order,rmin,pf,fileID);
