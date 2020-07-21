@@ -7,7 +7,7 @@ Tested in MATLAB2018a.
 Instructions (in MATLAB)
 ```
 cd ./dmpc/matlab
-Run the file dmpc.m (results will appear in result_dmpc.txt, that file should exist beforehand)
+Run the file dmpc_soft_bound2.m (results will appear in result_dmpc.txt, that file should exist beforehand)
 ```
 
 ```

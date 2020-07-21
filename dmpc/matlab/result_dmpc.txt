@@ -1,18 +1,24 @@
 ++++++++++++++++++++++++++++++++++
 h: 0.400
-Computation time is (seconds): 3.451
+Computation time is (seconds): 5.318
 Total flight time(seconds): 23.51 
-Total Flight Distance (m) 93.22
+Total Flight Distance (m): 93.22
 Collisions found, safety ratio: 0.649 
 ++++++++++++++++++++++++++++++++++
-h: 0.400
-Computation time is (seconds): 3.328
-Total flight time(seconds): 23.51 
-Total Flight Distance (m) 93.22
-Collisions found, safety ratio: 0.649 
+h: 0.300
+Computation time is (seconds): 4.502
+Total flight time(seconds): 17.96 
+Total Flight Distance (m): 80.48
+No collisions found, safety ratio: 1.062 
 ++++++++++++++++++++++++++++++++++
-h: 0.400
-Computation time is (seconds): 3.326
-Total flight time(seconds): 23.51 
-Total Flight Distance (m) 93.22
-Collisions found, safety ratio: 0.649 
+h: 0.200
+Computation time is (seconds): 6.730
+Total flight time(seconds): 15.90 
+Total Flight Distance (m): 87.84
+No collisions found, safety ratio: 1.046 
+++++++++++++++++++++++++++++++++++
+h: 0.150
+Computation time is (seconds): 6.082
+Total flight time(seconds): 18.42 
+Total Flight Distance (m): 81.64
+Collisions found, safety ratio: 0.860 

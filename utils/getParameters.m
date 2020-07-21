@@ -29,8 +29,8 @@ amax = 6.2;
 
 % Variables for ellipsoid constraint
 order = 2; % choose between 2 or 4 for the order of the super ellipsoid
-rmin = 0.31; % X-Y protection radius for collisions
-c = 2.0; % make this one for spherical constraint
+rmin = 0.3; % rmin is defined as 2*radius_drone
+c = 1.0; % make this 1 for spherical constraint
 E = diag([1,1,c]);
 E1 = E^(-1);
 E2 = E^(-order);

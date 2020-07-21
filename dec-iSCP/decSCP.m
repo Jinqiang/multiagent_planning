@@ -9,7 +9,7 @@ name_file_results='result_deciSCP.txt';
 
 % Time settings and variables
 T = 15; % Trajectory final time
-h = 0.4; % time step duration. 
+h = 0.15; % time step duration. 
 tk = 0:h:T;
 K = floor(T/h) + 1; % number of time steps
 Ts = 0.01; % period for interpolation @ 100Hza
@@ -103,7 +103,7 @@ if success
             if(i~=j)
                 differ = E1*(p(:,:,i) - p(:,:,j));
                 dist = (sum(differ.^order,1)).^(1/order);
-                if min(dist) < (rmin-0.01)
+                if min(dist) < (rmin-0.0001)
                     [value,index] = min(dist);
                     violation = 1;
                     fprintf("Collision constraint violated by %.2fcm: vehicles %i and %i @ k = %i \n", (rmin -value)*100,i,j,index)

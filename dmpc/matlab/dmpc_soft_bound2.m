@@ -8,7 +8,7 @@ addpath(genpath('./../../utils'));
 name_file_results='result_dmpc.txt';
 % Time settings and variables
 max_T = 40; % Trajectory final time
-h = 0.4 % time step duration /// Crashes if h=0.1
+h = 0.15 % time step duration /// Crashes if h=0.1
 max_K = max_T/h + 1; % number of time steps
 k_hor = 15; % horizon length
 
